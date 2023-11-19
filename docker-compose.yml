@@ -1,0 +1,39 @@
+version: '3.9'
+services:
+    # MongoDB service
+    todo-database:
+        container_name: todo-database
+        image: mongo
+        restart: always
+        volumes:
+            - data:/data/db
+        networks:
+            - todo-net
+        ports:
+            - '27017:27017'
+
+    # NodeJS Api service
+    todo-server:
+        container_name: todo-server
+        build:
+            context: ./todo-src
+            dockerfile: Dockerfile
+        image: todo-server
+        ports:
+            - '80:8082'
+        links:
+            - todo-database
+        env_file:
+            - ./todo-src/.env
+        networks:
+            - todo-net
+        depends_on:
+            - todo-database
+
+#  Persistent volumes
+volumes:
+    data: { name: 'todo-volume' }
+
+networks:
+    todo-net:
+        driver: bridge

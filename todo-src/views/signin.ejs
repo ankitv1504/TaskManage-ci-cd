@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Sign In</title>
+
+		<link rel="stylesheet" href="/styles.css" />
+	</head>
+	<body>
+		<style type="text/css">
+			body {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+			}
+			form {
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				gap: 1rem;
+			}
+			button {
+				width: 100%;
+				max-width: 500px;
+				min-width: 150px;
+				min-height: 2rem;
+				margin-top: 1rem;
+			}
+		</style>
+
+		<h1>Sign In</h1>
+		<form action="/api/signin" method="post">
+			<label for="emailuname">Email/Username: <input type="text" name="emailuname" id="emailuname" placeholder="Enter your email or username" /> </label>
+			<label for="password">Password: <input type="password" name="password" id="password" placeholder="Enter your password" /> </label>
+			<button type="submit">Sign In</button>
+		</form>
+
+		<footer>Already have an account? <a href="/signup">Sign Up >> </a></footer>
+	</body>
+</html>

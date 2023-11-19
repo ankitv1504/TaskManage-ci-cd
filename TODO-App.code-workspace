@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Main",
+			"path": "."
+		},
+		{
+			"name": "App",
+			"path": "todo-src"
+		}
+	],
+	"settings": {}
+}

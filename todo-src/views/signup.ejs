@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Sign Up</title>
+		<link rel="stylesheet" href="/styles.css" />
+	</head>
+	<body>
+		<style type="text/css">
+			body {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+			}
+			form {
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				gap: 1rem;
+			}
+			button {
+				width: 100%;
+				max-width: 500px;
+				min-width: 150px;
+				min-height: 2rem;
+				margin-top: 1rem;
+			}
+		</style>
+
+		<h1>Sign Up</h1>
+		<form action="/api/signup" method="post">
+			<label for="name">Name*: <input type="text" name="name" id="name" placeholder="Enter your name" required /> </label>
+			<label for="email">Email*: <input type="email" name="email" id="email" placeholder="Enter your email" required /> </label>
+			<label for="username">Username*: <input type="text" name="username" id="username" placeholder="Enter your username" required /> </label>
+			<label for="phone">Phone: <input type="tel" pattern: '[0-9]{10}' name="phone" id="phone" placeholder="Enter your phone number" /> </label>
+			<label for="password">Password*: <input type="password" name="password" id="password" placeholder="Enter your password" required /> </label>
+			<button type="submit">Sign Up</button>
+		</form>
+		<footer>
+			Already have an account? <a href='/signin'>Sign In << </a>
+		</footer>
+	</body>
+</html>

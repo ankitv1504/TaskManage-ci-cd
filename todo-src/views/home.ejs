@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>-- TODO --</title>
+		<link rel="stylesheet" href="/styles.css" />
+	</head>
+	<body>
+		<header>
+			<div></div>
+			<h1>Home</h1>
+			<div>
+				<button class="icon-btn" id="signout-btn">
+					<svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1.25em" width="1.25em" xmlns="http://www.w3.org/2000/svg">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+						<polyline points="16 17 21 12 16 7"></polyline>
+						<line x1="21" y1="12" x2="9" y2="12"></line>
+					</svg>
+				</button>
+			</div>
+		</header>
+		<main id="todo-main">
+			<h2 style="display: flex; justify-content: space-between; align-items: baseline">TODO <a id="clear-all" style="font-size: small">Clear All</a></h2>
+			<form id="todo-form">
+				<input type="text" name="todo" id="todo" placeholder="What needs to be done?" required />
+				<button id="submit-btn" type="submit">Add</button>
+			</form>
+			<ul id="todo-list"></ul>
+		</main>
+		<footer class="sticky">
+			<a id="clear-sessions"
+				>Sign Out from all devices<svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+					<polyline points="16 17 21 12 16 7"></polyline>
+					<line x1="21" y1="12" x2="9" y2="12"></line></svg
+			></a>
+		</footer>
+		<script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+		<script src="/scripts.js"></script>
+	</body>
+</html>
