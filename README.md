@@ -6,11 +6,18 @@
 
 ## Technologies
 
-- Node.js
-- Express
-- MongoDB
-- EJS
-- Docker
-- Docker Compose
+- Database
+  - MongoDB
+- Backend
+  - Node.js
+- Frontend
+  - EJS
+  - JS
+  - CSS
+- Server
+  - Express
+- DevOps
+  - Docker
+  - Docker Compose
 
 To get started, run `docker compose up --build -d`

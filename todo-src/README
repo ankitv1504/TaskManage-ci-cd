@@ -14,15 +14,22 @@
 
 ## Technologies
 
-- Node.js
-- Express
-- MongoDB
-- EJS
+- Database
+  - MongoDB
+- Backend
+  - Node.js
+- Frontend
+  - EJS
+  - JS
+  - CSS
+- Server
+  - Express
 
 ## Packages
 
 - Backend
   - bcrypt - for hashing(encrypt/decrypt) passwords
+  - cors - for allowing cross-origin requests
   - chalk - for adding styling to the console
   - dotenv - for loading environment variables
   - express - for creating the server and handling HTTP requests
