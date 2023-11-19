@@ -1,8 +1,8 @@
 # A Simple TODO APP
 
-<!-- ![image](/assets/0.png)
+![image](/assets/0.png)
 ![image](/assets/1.png)
-![image](/assets/2.png) -->
+![image](/assets/2.png)
 
 <img src="./assets/0.png" alt="image"/>
 
