@@ -20,4 +20,24 @@
   - Docker
   - Docker Compose
 
-To get started, run `docker compose up --build -d`
+### Steps To get started. 👇👇
+
+> ***Install Docker***
+>> Follow the steps from Official [docker website](https://docs.docker.com/get-docker/) to install Docker Desktop for your OS.
+> Start a terminal in the project root.
+
+> ***Install the dependencies***
+> ```bash
+> npm i
+> ```
+
+> **Fire up the docker containers**
+> ```bash
+> # To start the containers
+> docker compose up -d
+> # To restart the containers after any changes.
+> docker compose up --build -d
+> To Stop the containers
+> docker compose down
+> ```
+> ***Visit [localhost](http://localhost) to see the app***

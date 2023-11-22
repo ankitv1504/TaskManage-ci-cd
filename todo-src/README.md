@@ -1,27 +1,5 @@
 # A Simple TODO APP
 
-### Steps to run the project
-
-> ***Install Docker***
->> Follow the steps from Official [docker website](https://docs.docker.com/get-docker/) to install Docker Desktop for your OS.
-> Start a terminal in the project root.
-
-> ***Install the dependencies***
-> ```bash
-> npm i
-> ```
-
-> **Fire up the docker containers**
-> ```bash
-> # To start the containers
-> docker compose up -d
-> # To restart the containers after any changes.
-> docker compose up --build -d
-> To Stop the containers
-> docker compose down
-> ```
-> ***Visit [localhost](http://localhost) to see the app***
-
 ## Features
 
 - Authenticate Users(Signup/Signin)
@@ -69,3 +47,26 @@
   - prettier - for formatting the code
   - eslint-config-prettier - for linting the code with prettier
   - nodemon - for running the server in development mode
+
+> To install the packages
+
+```bash
+npm i bcrypt chalk dotenv express mongoose connect-mongodb-session express-session ejs --save
+```
+
+> To install nodemon(for development mode)
+
+```bash
+npm i nodemon --save-dev
+# or
+npm i -g nodemon
+```
+
+> To install eslint and prettier for linting and formatting
+
+```bash
+npm i eslint prettier eslint-config-prettier --save-dev
+eslint --init
+```
+
+> To run the server in development mode
