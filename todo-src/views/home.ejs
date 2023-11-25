@@ -3,7 +3,10 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>-- TODO --</title>
+		<title>TODO</title>
+		<link type="image/png" sizes="16x16" rel="icon" href="/assets/todo-list-16.png">
+		<link type="image/png" sizes="32x32" rel="icon" href="/assets/todo-list-32.png">
+		<link type="image/png" sizes="96x96" rel="icon" href="/assets/todo-list-96.png">
 		<link rel="stylesheet" href="/styles.css" />
 	</head>
 	<body>
@@ -21,7 +24,13 @@
 			</div>
 		</header>
 		<main id="todo-main">
-			<h2 style="display: flex; justify-content: space-between; align-items: baseline">TODO <a id="clear-all" style="font-size: small">Clear All</a></h2>
+			<h2 style="display: flex; justify-content: space-between; align-items: baseline">
+				TODO
+				<div>
+					<a id="load-more-btn" style="font-size: small">Load More ...</a>
+					<a id="clear-all" style="font-size: small">Clear All</a>
+				</div>
+			</h2>
 			<form id="todo-form">
 				<input type="text" name="todo" id="todo" placeholder="What needs to be done?" required />
 				<button id="submit-btn" type="submit">Add</button>

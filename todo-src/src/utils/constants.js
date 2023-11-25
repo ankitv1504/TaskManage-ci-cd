@@ -10,3 +10,4 @@ export const warnLog = (text) => console.warn(chalk.yellow(text))
 export const dimLog = (text) => console.log(chalk.dim(text))
 
 export const SALT_ROUNDS = 10
+export const LIMIT = 10

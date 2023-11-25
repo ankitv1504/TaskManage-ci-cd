@@ -25,12 +25,7 @@
 > ***Install Docker***
 >> Follow the steps from Official [docker website](https://docs.docker.com/get-docker/) to install Docker Desktop for your OS.
 > Start a terminal in the project root.
-
-> ***Install the dependencies***
-> ```bash
-> npm i
-> ```
-
+>
 > **Fire up the docker containers**
 > ```bash
 > # To start the containers

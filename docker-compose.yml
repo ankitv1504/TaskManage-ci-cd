@@ -10,7 +10,7 @@ services:
         networks:
             - todo-net
         ports:
-            - '27017:27017'
+            - '${DB_PORT}:${DB_PORT}'
 
     # NodeJS Api service
     todo-server:
@@ -20,11 +20,11 @@ services:
             dockerfile: Dockerfile
         image: todo-server
         ports:
-            - '80:8082'
+            - '80:${PORT}'
         links:
             - todo-database
         env_file:
-            - ./todo-src/.env
+            - ./.env
         networks:
             - todo-net
         depends_on:

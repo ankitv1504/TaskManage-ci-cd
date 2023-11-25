@@ -7,9 +7,30 @@ window.addEventListener('load', () => {
 	const list = document.getElementById('todo-list')
 	const signOutBtn = document.getElementById('signout-btn')
 
-	const fetchNrder = () => {
-		axios('/api/list').then((response) => {
-			todoList = [...response.data.todos]
+
+
+	// // Fetch All and render TODOs
+	// const fetchNrder = () => {
+	// 	axios('/api/list').then((response) => {
+	// 		todoList = [...response.data.todos]
+	// 		createList()
+	// 	})
+	// }
+
+	// Fetch render TODOs with pagination
+	const fetchNrder = (toSkip = true, showAlert=true, initial) => {
+		const skip = toSkip ? todoList.length : 0
+		const limit =  initial? 10 : !showAlert ? todoList.length : todoList.length + 10
+		axios(`/api/paged/?skip=${skip}&limit=${limit}`).then((response) => {
+			// console.log(response.data)
+			if(showAlert && response.data.length===0){
+				return alert('No more todos')
+			}
+			if(toSkip){
+				todoList.push(...response.data)
+			}else{
+				todoList = [...response.data]
+			}
 			createList()
 		})
 	}
@@ -21,7 +42,7 @@ window.addEventListener('load', () => {
 		axios
 			.post('/api/add', params)
 			.then(() => {
-				fetchNrder()
+				fetchNrder(false)
 				todoInput.value = ''
 			})
 			.catch((error) => {
@@ -35,7 +56,7 @@ window.addEventListener('load', () => {
 		if (newTodo === null || newTodo === todo) {
 			return
 		} else if (newTodo === '') {
-			handleDelete(id)
+		    return handleDelete(id)
 		} else {
 			const params = new URLSearchParams()
 			params.append('todo', newTodo)
@@ -43,7 +64,7 @@ window.addEventListener('load', () => {
 			axios
 				.put(`/api/edit/${id}`, params)
 				.then(() => {
-					fetchNrder()
+					fetchNrder(false)
 				})
 				.catch((error) => {
 					console.log(error)
@@ -55,7 +76,7 @@ window.addEventListener('load', () => {
 		axios
 			.delete(`/api/delete/${id}`)
 			.then(() => {
-				fetchNrder()
+				fetchNrder(false, false)
 			})
 			.catch((error) => {
 				console.log(error)
@@ -66,7 +87,7 @@ window.addEventListener('load', () => {
 		axios
 			.delete('/api/deleteAll')
 			.then(() => {
-				fetchNrder()
+				fetchNrder(false,false)
 			})
 			.catch((error) => {
 				console.log(error)
@@ -90,7 +111,7 @@ window.addEventListener('load', () => {
 
 			editBtn.onclick = () => {
 				console.log(todo.todo)
-				handleUpdate(todo.id, todo.todo)
+				handleUpdate(todo._id, todo.todo)
 			}
 			editBtn.innerHTML = `
             <svg stroke='currentColor' fill='currentColor' stroke-width=0 view-box='0 0 24 24' height='1em' width='1em'>
@@ -141,7 +162,7 @@ window.addEventListener('load', () => {
 	}
 
 	// initial fetch & render todos
-	fetchNrder()
+	fetchNrder(true, false, true)
 
 	todoForm.addEventListener('submit', handleAdd)
 
@@ -150,4 +171,20 @@ window.addEventListener('load', () => {
 	document.getElementById('clear-all').addEventListener('click', handleDeleteAll)
 
 	document.getElementById('clear-sessions').addEventListener('click', clearAllSessions)
+
+	// load more
+	document.getElementById('load-more-btn').addEventListener('click', () => {
+		fetchNrder()
+	})
+
+	// Infinite loading
+	document.addEventListener('wheel', () => {
+		let documentHeight = document.body.scrollHeight
+		let currentScroll = window.scrollY + window.innerHeight
+
+		if (currentScroll + 20 >= documentHeight && event.deltaY > 0) { // positive delta means scrolling down
+			// console.log('You are at the bottom!')
+			fetchNrder()
+		}
+	})
 })

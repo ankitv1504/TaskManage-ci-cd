@@ -5,7 +5,6 @@ import userRoutes from './src/routes/userRoutes.js'
 import todoRoutes from './src/routes/todoRoutes.js'
 import ConnectMongoDBSession from 'connect-mongodb-session'
 import cors from 'cors'
-import { authValidate } from './src/middlewares/validateAuth.js'
 
 const sessionStore = ConnectMongoDBSession(session)
 

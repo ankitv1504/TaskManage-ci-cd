@@ -1,1 +1,4 @@
 .timetracker
+/.env
+/docker-compose-dev.yml
+/.env.dev
