@@ -1,39 +1,20 @@
-version: '3.9'
+version: '3.8'
+
 services:
-    # MongoDB service
-    todo-database:
-        container_name: todo-database
-        image: mongo
-        restart: always
-        volumes:
-            - data:/data/db
-        networks:
-            - todo-net
-        ports:
-            - '${DB_PORT}:${DB_PORT}'
-
-    # NodeJS Api service
-    todo-server:
-        container_name: todo-server
-        build:
-            context: ./todo-src
-            dockerfile: Dockerfile
-        image: todo-server
-        ports:
-            - '80:${PORT}'
-        links:
-            - todo-database
-        env_file:
-            - ./.env
-        networks:
-            - todo-net
-        depends_on:
-            - todo-database
-
-#  Persistent volumes
-volumes:
-    data: { name: 'todo-volume' }
+  todo-server:
+    image: todo-server
+    container_name: todo-server
+    ports:
+      - '3010:3010'  # Exposing port 3010 on the host machine
+    env_file:
+      - ./.env  # Pointing to the .env file directly in the root folder
+    working_dir: /usr/src/app
+    volumes:
+      - ./todo-src:/usr/src/app  # Mount the code directory to the container
+    command: npm start
+    networks:
+      - todo-net
 
 networks:
-    todo-net:
-        driver: bridge
+  todo-net:
+    driver: bridge

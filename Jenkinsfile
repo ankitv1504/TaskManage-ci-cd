@@ -1,0 +1,107 @@
+pipeline {
+  agent any
+  options { disableConcurrentBuilds() }
+
+  environment {
+    REGISTRY = "ankitv1504"         // <- DockerHub username
+    IMAGE    = "todo-server"
+    // IMAGE_TAG ko build ke waqt set karenge (BUILD_NUMBER + short SHA)
+  }
+
+  tools { nodejs 'NodeJS 18' }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Install & Build') {
+      steps {
+        dir('todo-src') {
+          sh 'npm install'
+          sh 'npm run build || echo "no build step"'
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        dir('todo-src') {
+          sh 'npm test || echo "no tests"'
+        }
+      }
+    }
+
+    stage('Build & Push Image') {
+      steps {
+        dir('todo-src') {
+          script {
+            def shortCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+            env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+          }
+          withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+            sh 'echo $DH_PASS | docker login -u $DH_USER --password-stdin'
+          }
+          sh 'docker build -t $REGISTRY/$IMAGE:$IMAGE_TAG .'
+          sh 'docker push $REGISTRY/$IMAGE:$IMAGE_TAG'
+          // optional latest
+          sh 'docker tag $REGISTRY/$IMAGE:$IMAGE_TAG $REGISTRY/$IMAGE:latest || true'
+          sh 'docker push $REGISTRY/$IMAGE:latest || true'
+        }
+      }
+    }
+
+    stage('Update Manifest & Deploy') {
+      steps {
+        dir('manifest') {
+          // 1) pull private manifest repo
+          checkout([$class: 'GitSCM',
+            branches: [[name: '*/main']],
+            userRemoteConfigs: [[
+              url: 'https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git',
+              credentialsId: 'github-token'
+            ]]
+          ])
+
+          // 2) update image tag in docker-compose.yml
+          sh '''
+            set -e
+            yml="docker-compose.yml"
+            if ! test -f "$yml"; then echo "docker-compose.yml missing"; exit 1; fi
+            # replace image line to pin the new tag
+            sed -i "s|^\\s*image:.*|    image: $REGISTRY/$IMAGE:$IMAGE_TAG|" "$yml"
+          '''
+
+          // 3) commit + push back to manifest repo
+          sh '''
+            git config user.email "jenkins@ci.local"
+            git config user.name  "Jenkins CI"
+            git add docker-compose.yml
+            git commit -m "deploy: $REGISTRY/$IMAGE:$IMAGE_TAG" || echo "No changes"
+          '''
+          withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+            sh 'git push https://${GIT_USER}:${GIT_TOKEN}@github.com/ankitv1504/TaskManage-ci-cd-menifest.git HEAD:main'
+          }
+
+          // 4) deploy on this node using compose
+          sh '''
+            set -e
+            # support both compose v1 and v2
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker compose"
+            else
+              COMPOSE="docker-compose"
+            fi
+            $COMPOSE pull
+            $COMPOSE up -d
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    success { echo "Deployed: ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}" }
+    failure { echo "Build/Deploy failed. Check logs." }
+  }
+}

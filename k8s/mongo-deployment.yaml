@@ -1,0 +1,40 @@
+# mongo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-database
+  template:
+    metadata:
+      labels:
+        app: todo-database
+    spec:
+      containers:
+      - name: mongo
+        image: mongo
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+      volumes:
+      - name: mongo-data
+        persistentVolumeClaim:
+          claimName: mongo-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-database
+spec:
+  selector:
+    app: todo-database
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+  clusterIP: None  # Headless service, or remove this if not needed

@@ -1,0 +1,14 @@
+# todo-server-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-server
+spec:
+  selector:
+    app: todo-server
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3009
+      nodePort: 30080

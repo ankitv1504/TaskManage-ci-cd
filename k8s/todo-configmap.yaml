@@ -1,0 +1,8 @@
+# todo-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+data:
+  DB_PORT: "27017"
+  PORT: "3009"
