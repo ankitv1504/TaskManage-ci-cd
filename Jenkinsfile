@@ -59,7 +59,7 @@ pipeline {
             branches: [[name: '*/main']],
             userRemoteConfigs: [[
               url: 'https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git',
-              credentialsId: 'github-token'
+              credentialsId: 'github'
             ]]
           ])
 
@@ -79,7 +79,7 @@ pipeline {
             git add docker-compose.yml
             git commit -m "deploy: $REGISTRY/$IMAGE:$IMAGE_TAG" || echo "No changes"
           '''
-          withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+          withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
             sh 'git push https://${GIT_USER}:${GIT_TOKEN}@github.com/ankitv1504/TaskManage-ci-cd-menifest.git HEAD:main'
           }
 
