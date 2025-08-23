@@ -2,15 +2,13 @@ version: '3.8'
 
 services:
   todo-server:
-    image: todo-server
+    image: ankitv1504/todo-server:latest
     container_name: todo-server
     ports:
       - '3010:3010'  # Exposing port 3010 on the host machine
     env_file:
       - ./.env  # Pointing to the .env file directly in the root folder
     working_dir: /usr/src/app
-    volumes:
-      - ./todo-src:/usr/src/app  # Mount the code directory to the container
     command: npm start
     networks:
       - todo-net
