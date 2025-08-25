@@ -11,7 +11,7 @@ pipeline {
     }
 
     environment {
-        REGISTRY   = "ankitv1504"
+        REGISTRY   = "ankitv1504" // <- your DockerHub username
         IMAGE      = "todo-server"
         SONARQUBE_SERVER = "SonarQubeServer"
         SONAR_SCANNER    = "SonarScanner"
