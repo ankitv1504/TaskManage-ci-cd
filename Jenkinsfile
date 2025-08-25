@@ -71,6 +71,8 @@ pipeline {
             when { expression { return params.RUN_SONAR } }
             steps {
                 dir('todo-src') {
+                  // Use SonarQube credentials (token)
+                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv("${SONARQUBE_SERVER}") {
                         script {
                             def scannerHome = tool "${SONAR_SCANNER}"
@@ -85,6 +87,7 @@ pipeline {
                             """
                         }
                     }
+                  }
                 }
             }
         }
