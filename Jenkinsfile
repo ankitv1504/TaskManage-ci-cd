@@ -6,7 +6,7 @@ pipeline {
         booleanParam(name: 'RUN_SONAR',     defaultValue: true,  description: 'Run SonarQube analysis')
         booleanParam(name: 'RUN_TRIVY',     defaultValue: true,  description: 'Scan image with Trivy')
         booleanParam(name: 'DEPLOY_COMPOSE',defaultValue: true,  description: 'Deploy using docker compose (manifest repo)')
-        booleanParam(name: 'DEPLOY_K8S',    defaultValue: false, description: 'Deploy to Kubernetes using ArgoCD')
+        booleanParam(name: 'DEPLOY_K8S',    defaultValue: true, description: 'Deploy to Kubernetes using Helm chart')
         booleanParam(name: 'INSTALL_MON',   defaultValue: false, description: 'Install/Upgrade Prometheus & Grafana via Helm')
     }
 
@@ -71,7 +71,6 @@ pipeline {
             when { expression { return params.RUN_SONAR } }
             steps {
                 dir('todo-src') {
-                  // Use SonarQube credentials (token)
                   withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     withSonarQubeEnv("${SONARQUBE_SERVER}") {
                         script {
@@ -137,8 +136,8 @@ pipeline {
             steps {
                 dir('manifest') {
                     checkout([$class: 'GitSCM',
-                        branches: [[name: "*/${MANIFEST_BRANCH}"]],
-                        userRemoteConfigs: [[ url: "${MANIFEST_REPO_URL}", credentialsId: "${MANIFEST_CRED_ID}" ]]
+                        branches: [[name: "*/${MANIFEST_BRANCH}"]], 
+                        userRemoteConfigs: [[url: "${MANIFEST_REPO_URL}", credentialsId: "${MANIFEST_CRED_ID}"]]
                     ])
                     sh '''
                         set -e
@@ -167,27 +166,20 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes (ArgoCD)') {
+        stage('Deploy to Kubernetes (Helm)') {
             when { expression { return params.DEPLOY_K8S } }
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'argocd-admin', usernameVariable: 'ARGO_USER', passwordVariable: 'ARGO_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'helm-k8s-credentials', usernameVariable: 'HELM_USER', passwordVariable: 'HELM_PASS')]) {
                         sh '''
                           set -e
-                          argocd login ${ARGO_SERVER} --username ${ARGO_USER} --password ${ARGO_PASS} --grpc-web --insecure
-                          if ! argocd app get ${ARGO_APP} >/dev/null 2>&1; then
-                            argocd app create ${ARGO_APP} \
-                              --repo ${ARGO_REPO_URL} \
-                              --path ${ARGO_REPO_PATH} \
-                              --dest-server ${ARGO_DEST_SRV} \
-                              --dest-namespace ${ARGO_DEST_NS} \
-                              --sync-policy automated \
-                              --self-heal
-                          else
-                            argocd app set ${ARGO_APP} --sync-policy automated --self-heal
-                          fi
-                          argocd app sync ${ARGO_APP}
-                          argocd app wait ${ARGO_APP} --sync --health --timeout 300
+                          helm repo add todo-app-repo https://github.com/ankitv1504/TaskManage-ci-cd-menifest/helm
+                          helm repo update
+                          helm upgrade --install todo-app ./helm/todo-app \
+                            --set image.repository=${REGISTRY}/${IMAGE} \
+                            --set image.tag=${IMAGE_TAG} \
+                            --set service.port=80 \
+                            --set service.targetPort=3009
                         '''
                     }
                 }
@@ -230,15 +222,4 @@ pipeline {
         failure {
             script {
                 try {
-                    slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env.JOB_NAME} #${env.BUILD_NUMBER} — check console")
-                } catch (e) { echo "Slack not configured or plugin missing" }
-            }
-            emailext subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: "Build failed. Check Jenkins console output.",
-                     to: "you@example.com"
-        }
-        always {
-            echo "Build finished: ${currentBuild.currentResult}"
-        }
-    }
-}
+                    slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env
