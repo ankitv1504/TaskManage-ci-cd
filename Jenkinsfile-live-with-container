@@ -3,7 +3,7 @@ pipeline {
   options { disableConcurrentBuilds() }
 
   environment {
-    REGISTRY = "ankitv1504"         // <- DockerHub username
+    REGISTRY = "ankitv1504"         // <- your DockerHub username
     IMAGE    = "todo-server"
     // IMAGE_TAG ko build ke waqt set karenge (BUILD_NUMBER + short SHA)
   }
