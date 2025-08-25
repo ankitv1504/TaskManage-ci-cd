@@ -1,285 +1,241 @@
 pipeline {
-  agent any
-  options { disableConcurrentBuilds() ; timestamps() }
+    agent any
+    options { disableConcurrentBuilds(); timestamps() }
 
-  // Toggle-able deploy knobs
-  parameters {
-    booleanParam(name: 'RUN_SONAR',     defaultValue: true,  description: 'Run SonarQube analysis')
-    booleanParam(name: 'RUN_TRIVY',     defaultValue: true,  description: 'Scan image with Trivy')
-    booleanParam(name: 'DEPLOY_COMPOSE',defaultValue: true,  description: 'Deploy using docker compose (manifest repo)')
-    booleanParam(name: 'DEPLOY_K8S',    defaultValue: false, description: 'Deploy to Kubernetes using ArgoCD')
-    booleanParam(name: 'INSTALL_MON',   defaultValue: false, description: 'Install/Upgrade Prometheus & Grafana via Helm')
-  }
-
-  environment {
-    // Docker
-    REGISTRY   = "ankitv1504"
-    IMAGE      = "todo-server"
-
-    // SonarQube
-    // Jenkins: Manage Jenkins -> Configure System -> SonarQube servers -> Name this 'SonarQubeServer'
-    SONARQUBE_SERVER = "SonarQubeServer"
-    // Jenkins: Global Tool Config -> SonarQube Scanner -> name 'SonarScanner'
-    SONAR_SCANNER    = "SonarScanner"
-    SONAR_PROJECTKEY = "todo-server"           // apna Sonar project key
-    SONAR_PROJNAME   = "todo-server"
-    SONAR_PROJVER    = "${env.BUILD_NUMBER}"
-
-    // Trivy policy
-    TRIVY_SEVERITY   = "HIGH,CRITICAL"
-
-    // Git
-    MANIFEST_REPO_URL = "https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git"
-    MANIFEST_BRANCH   = "main"
-    MANIFEST_CRED_ID  = "github"               // <- Jenkins credentialsId for private manifest repo
-
-    // ArgoCD (optional)
-    ARGO_SERVER   = "argocd.example.com"       // e.g. argocd.yourdomain.com
-    ARGO_APP      = "todo-app"
-    ARGO_REPO_URL = "https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git"
-    ARGO_REPO_PATH= "k8s"                      // keep your k8s manifests here in manifest repo
-    ARGO_DEST_SRV = "https://kubernetes.default.svc"
-    ARGO_DEST_NS  = "default"
-
-    // Slack (Slack plugin installed) - or use webhook stage below
-    SLACK_CHANNEL = "#ci-cd"
-  }
-
-  tools {
-    nodejs 'NodeJS 18'
-    // Sonar scanner tool is pulled with tool step
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps { checkout scm }
+    parameters {
+        booleanParam(name: 'RUN_SONAR',     defaultValue: true,  description: 'Run SonarQube analysis')
+        booleanParam(name: 'RUN_TRIVY',     defaultValue: true,  description: 'Scan image with Trivy')
+        booleanParam(name: 'DEPLOY_COMPOSE',defaultValue: true,  description: 'Deploy using docker compose (manifest repo)')
+        booleanParam(name: 'DEPLOY_K8S',    defaultValue: false, description: 'Deploy to Kubernetes using ArgoCD')
+        booleanParam(name: 'INSTALL_MON',   defaultValue: false, description: 'Install/Upgrade Prometheus & Grafana via Helm')
     }
 
-    stage('Compute Image Tag') {
-      steps {
-        script {
-          def shortCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-          env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
-          echo "IMAGE: ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
+    environment {
+        REGISTRY   = "ankitv1504"
+        IMAGE      = "todo-server"
+        SONARQUBE_SERVER = "SonarQubeServer"
+        SONAR_SCANNER    = "SonarScanner"
+        SONAR_PROJECTKEY = "todo-server"
+        SONAR_PROJNAME   = "todo-server"
+        SONAR_PROJVER    = "${env.BUILD_NUMBER}"
+        TRIVY_SEVERITY   = "HIGH,CRITICAL"
+        MANIFEST_REPO_URL = "https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git"
+        MANIFEST_BRANCH   = "main"
+        MANIFEST_CRED_ID  = "github"
+        ARGO_SERVER   = "argocd.example.com"
+        ARGO_APP      = "todo-app"
+        ARGO_REPO_URL = "https://github.com/ankitv1504/TaskManage-ci-cd-menifest.git"
+        ARGO_REPO_PATH= "k8s"
+        ARGO_DEST_SRV = "https://kubernetes.default.svc"
+        ARGO_DEST_NS  = "default"
+        SLACK_CHANNEL = "#ci-cd"
+    }
+
+    tools {
+        nodejs 'NodeJS 18'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
         }
-      }
-    }
 
-    stage('Install & Build') {
-      steps {
-        dir('todo-src') {
-          sh 'npm install'
-          sh 'npm run build || echo "no build step"'
-        }
-      }
-    }
-
-    stage('Test') {
-      steps {
-        dir('todo-src') {
-          sh 'npm test || echo "no tests"'
-        }
-      }
-    }
-
-    stage('SonarQube Analysis') {
-      when { expression { return params.RUN_SONAR } }
-      steps {
-        dir('todo-src') {
-          withSonarQubeEnv("${SONARQUBE_SERVER}") {
-            script {
-              def scannerHome = tool "${SONAR_SCANNER}"
-              // tweak sonar.* props per your stack (js/ts/coverage paths)
-              sh """
-                ${scannerHome}/bin/sonar-scanner \
-                  -Dsonar.projectKey=${SONAR_PROJECTKEY} \
-                  -Dsonar.projectName=${SONAR_PROJNAME} \
-                  -Dsonar.projectVersion=${SONAR_PROJVER} \
-                  -Dsonar.sources=./src,./views,./server.js,./app.js \
-                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                  -Dsonar.exclusions=node_modules/**,public/**
-              """
+        stage('Compute Image Tag') {
+            steps {
+                script {
+                    def shortCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortCommit}"
+                    echo "IMAGE: ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
+                }
             }
-          }
         }
-      }
-    }
 
-    stage('Quality Gate') {
-      when { expression { return params.RUN_SONAR } }
-      steps {
-        // requires "Wait for SonarQube Quality Gate" Jenkins plugin
-        timeout(time: 10, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
+        stage('Install & Build') {
+            steps {
+                dir('todo-src') {
+                    sh 'npm install'
+                    sh 'npm run build || echo "no build step"'
+                }
+            }
         }
-      }
-    }
 
-    stage('Build & Push Image') {
-      steps {
-        dir('todo-src') {
-          withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-            sh 'echo $DH_PASS | docker login -u $DH_USER --password-stdin'
-          }
-          sh 'docker build -t $REGISTRY/$IMAGE:$IMAGE_TAG .'
-          sh 'docker push $REGISTRY/$IMAGE:$IMAGE_TAG'
-          sh 'docker tag $REGISTRY/$IMAGE:$IMAGE_TAG $REGISTRY/$IMAGE:latest || true'
-          sh 'docker push $REGISTRY/$IMAGE:latest || true'
+        stage('Test') {
+            steps {
+                dir('todo-src') {
+                    sh 'npm test || echo "no tests"'
+                }
+            }
         }
-      }
-    }
 
-    stage('Trivy Image Scan') {
-      when { expression { return params.RUN_TRIVY } }
-      steps {
-        dir('todo-src') {
-          script {
-            // Ensure Trivy is installed on the Jenkins node
-            sh """
-              trivy image --format json \
-                --severity ${TRIVY_SEVERITY} \
-                --exit-code 1 \
-            $REGISTRY/$IMAGE:$IMAGE_TAG > todo-src/trivy_report.json
-            """
-            // Parse and print Trivy scan results
-            sh 'cat todo-src/trivy_report.json'
-          }
+        stage('SonarQube Analysis') {
+            when { expression { return params.RUN_SONAR } }
+            steps {
+                dir('todo-src') {
+                    withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                        script {
+                            def scannerHome = tool "${SONAR_SCANNER}"
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                  -Dsonar.projectKey=${SONAR_PROJECTKEY} \
+                                  -Dsonar.projectName=${SONAR_PROJNAME} \
+                                  -Dsonar.projectVersion=${SONAR_PROJVER} \
+                                  -Dsonar.sources=./src,./views,./server.js,./app.js \
+                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                                  -Dsonar.exclusions=node_modules/**,public/**
+                            """
+                        }
+                    }
+                }
+            }
         }
-      }
+
+        stage('Quality Gate') {
+            when { expression { return params.RUN_SONAR } }
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build & Push Image') {
+            steps {
+                dir('todo-src') {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                        sh 'echo $DH_PASS | docker login -u $DH_USER --password-stdin'
+                    }
+                    sh 'docker build -t $REGISTRY/$IMAGE:$IMAGE_TAG .'
+                    sh 'docker push $REGISTRY/$IMAGE:$IMAGE_TAG'
+                    sh 'docker tag $REGISTRY/$IMAGE:$IMAGE_TAG $REGISTRY/$IMAGE:latest || true'
+                    sh 'docker push $REGISTRY/$IMAGE:latest || true'
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            when { expression { return params.RUN_TRIVY } }
+            steps {
+                dir('todo-src') {
+                    script {
+                        sh """
+                          trivy image --format json \
+                            --severity ${TRIVY_SEVERITY} \
+                            --exit-code 1 \
+                          $REGISTRY/$IMAGE:$IMAGE_TAG > todo-src/trivy_report.json
+                        """
+                        sh 'cat todo-src/trivy_report.json'
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifest & Deploy (Compose)') {
+            when { expression { return params.DEPLOY_COMPOSE } }
+            steps {
+                dir('manifest') {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: "*/${MANIFEST_BRANCH}"]],
+                        userRemoteConfigs: [[ url: "${MANIFEST_REPO_URL}", credentialsId: "${MANIFEST_CRED_ID}" ]]
+                    ])
+                    sh '''
+                        set -e
+                        yml="docker-compose.yml"
+                        test -f "$yml" || (echo "docker-compose.yml missing"; exit 1)
+                        sed -i "s|^\\s*image:.*|    image: ${REGISTRY}/${IMAGE}:${IMAGE_TAG}|" "$yml"
+                        git config user.email "jenkins@ci.local"
+                        git config user.name  "Jenkins CI"
+                        git add "$yml"
+                        git commit -m "deploy: ${REGISTRY}/${IMAGE}:${IMAGE_TAG}" || echo "No changes"
+                    '''
+                    withCredentials([usernamePassword(credentialsId: "${MANIFEST_CRED_ID}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh 'git push https://${GIT_USER}:${GIT_TOKEN}@github.com/ankitv1504/TaskManage-ci-cd-menifest.git HEAD:${MANIFEST_BRANCH}'
+                    }
+                    sh '''
+                        set -e
+                        if docker compose version >/dev/null 2>&1; then
+                          COMPOSE="docker compose"
+                        else
+                          COMPOSE="docker-compose"
+                        fi
+                        $COMPOSE pull
+                        $COMPOSE up -d
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (ArgoCD)') {
+            when { expression { return params.DEPLOY_K8S } }
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'argocd-admin', usernameVariable: 'ARGO_USER', passwordVariable: 'ARGO_PASS')]) {
+                        sh '''
+                          set -e
+                          argocd login ${ARGO_SERVER} --username ${ARGO_USER} --password ${ARGO_PASS} --grpc-web --insecure
+                          if ! argocd app get ${ARGO_APP} >/dev/null 2>&1; then
+                            argocd app create ${ARGO_APP} \
+                              --repo ${ARGO_REPO_URL} \
+                              --path ${ARGO_REPO_PATH} \
+                              --dest-server ${ARGO_DEST_SRV} \
+                              --dest-namespace ${ARGO_DEST_NS} \
+                              --sync-policy automated \
+                              --self-heal
+                          else
+                            argocd app set ${ARGO_APP} --sync-policy automated --self-heal
+                          fi
+                          argocd app sync ${ARGO_APP}
+                          argocd app wait ${ARGO_APP} --sync --health --timeout 300
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Helm: Prometheus & Grafana (optional)') {
+            when { expression { return params.INSTALL_MON } }
+            steps {
+                script {
+                    sh '''
+                        set -e
+                        kubectl cluster-info
+                        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
+                        helm repo update
+                        helm upgrade --install kube-prom prometheus-community/kube-prometheus-stack \
+                          --namespace monitoring --create-namespace
+                        kubectl get secret -n monitoring \
+                          $(kubectl get secret -n monitoring | awk '/grafana/ {print $1; exit}') \
+                          -o jsonpath="{.data.admin-password}" | base64 -d || true
+                        echo ""
+                    '''
+                }
+            }
+        }
     }
 
     post {
-      always {
-       // Archive the Trivy JSON report so you can access it later
-       archiveArtifacts allowEmptyArchive: true, artifacts: 'todo-src/trivy_report.json', followSymlinks: false
-     }
-    }
-
-
-    stage('Update Manifest & Deploy (Compose)') {
-      when { expression { return params.DEPLOY_COMPOSE } }
-      steps {
-        dir('manifest') {
-          checkout([$class: 'GitSCM',
-            branches: [[name: "*/${MANIFEST_BRANCH}"]],
-            userRemoteConfigs: [[ url: "${MANIFEST_REPO_URL}", credentialsId: "${MANIFEST_CRED_ID}" ]]
-          ])
-
-          sh '''
-            set -e
-            yml="docker-compose.yml"
-            test -f "$yml" || (echo "docker-compose.yml missing"; exit 1)
-            sed -i "s|^\\s*image:.*|    image: ${REGISTRY}/${IMAGE}:${IMAGE_TAG}|" "$yml"
-            git config user.email "jenkins@ci.local"
-            git config user.name  "Jenkins CI"
-            git add "$yml"
-            git commit -m "deploy: ${REGISTRY}/${IMAGE}:${IMAGE_TAG}" || echo "No changes"
-          '''
-          withCredentials([usernamePassword(credentialsId: "${MANIFEST_CRED_ID}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-            sh 'git push https://${GIT_USER}:${GIT_TOKEN}@github.com/ankitv1504/TaskManage-ci-cd-menifest.git HEAD:${MANIFEST_BRANCH}'
-          }
-
-          // Compose deploy on this node
-          sh '''
-            set -e
-            if docker compose version >/dev/null 2>&1; then
-              COMPOSE="docker compose"
-            else
-              COMPOSE="docker-compose"
-            fi
-            $COMPOSE pull
-            $COMPOSE up -d
-          '''
+        success {
+            echo "Deployed: ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
+            script {
+                try {
+                    slackSend(channel: "${SLACK_CHANNEL}", message: ":white_check_mark: *SUCCESS* ${env.JOB_NAME} #${env.BUILD_NUMBER} -> ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}")
+                } catch (e) { echo "Slack not configured or plugin missing" }
+            }
+            emailext subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build succeeded and deployed image ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}",
+                     to: "you@example.com"
         }
-      }
-    }
-
-    stage('Deploy to Kubernetes (ArgoCD)') {
-      when { expression { return params.DEPLOY_K8S } }
-      steps {
-        script {
-          // REQUIRE: argocd CLI installed on Jenkins node
-          withCredentials([usernamePassword(credentialsId: 'argocd-admin', usernameVariable: 'ARGO_USER', passwordVariable: 'ARGO_PASS')]) {
-            sh '''
-              set -e
-              # login (add --insecure if self-signed)
-              argocd login ${ARGO_SERVER} --username ${ARGO_USER} --password ${ARGO_PASS} --grpc-web --insecure
-
-              # create or update app
-              if ! argocd app get ${ARGO_APP} >/dev/null 2>&1; then
-                argocd app create ${ARGO_APP} \
-                  --repo ${ARGO_REPO_URL} \
-                  --path ${ARGO_REPO_PATH} \
-                  --dest-server ${ARGO_DEST_SRV} \
-                  --dest-namespace ${ARGO_DEST_NS} \
-                  --sync-policy automated \
-                  --self-heal
-              else
-                argocd app set ${ARGO_APP} --sync-policy automated --self-heal
-              fi
-
-              # Force a refresh after manifest repo update
-              argocd app sync ${ARGO_APP}
-              argocd app wait ${ARGO_APP} --sync --health --timeout 300
-            '''
-          }
+        failure {
+            script {
+                try {
+                    slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env.JOB_NAME} #${env.BUILD_NUMBER} — check console")
+                } catch (e) { echo "Slack not configured or plugin missing" }
+            }
+            emailext subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build failed. Check Jenkins console output.",
+                     to: "you@example.com"
         }
-      }
-    }
-
-    stage('Helm: Prometheus & Grafana (optional)') {
-      when { expression { return params.INSTALL_MON } }
-      steps {
-        script {
-          // REQUIRE: helm installed, kubeconfig points to minikube/cluster
-          sh '''
-            set -e
-            kubectl cluster-info
-
-            # Prometheus
-            helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
-            helm repo update
-            helm upgrade --install kube-prom prometheus-community/kube-prometheus-stack \
-              --namespace monitoring --create-namespace
-
-            # Grafana admin password print (optional)
-            kubectl get secret -n monitoring \
-              $(kubectl get secret -n monitoring | awk '/grafana/ {print $1; exit}') \
-              -o jsonpath="{.data.admin-password}" | base64 -d || true
-            echo ""
-          '''
+        always {
+            echo "Build finished: ${currentBuild.currentResult}"
         }
-      }
     }
-  }
-
-  post {
-    success {
-      echo "Deployed: ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
-      // Slack plugin
-      script {
-        try {
-          slackSend(channel: "${SLACK_CHANNEL}", message: ":white_check_mark: *SUCCESS* ${env.JOB_NAME} #${env.BUILD_NUMBER} -> ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}")
-        } catch (e) { echo "Slack not configured or plugin missing" }
-      }
-      // Email (Email Extension plugin)
-      emailext subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-               body: "Build succeeded and deployed image ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}",
-               to: "you@example.com"
-    }
-    failure {
-      script {
-        try {
-          slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env.JOB_NAME} #${env.BUILD_NUMBER} — check console")
-        } catch (e) { echo "Slack not configured or plugin missing" }
-      }
-      emailext subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-               body: "Build failed. Check Jenkins console output.",
-               to: "you@example.com"
-    }
-    always {
-      echo "Build finished: ${currentBuild.currentResult}"
-    }
-  }
 }
