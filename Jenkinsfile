@@ -222,4 +222,15 @@ pipeline {
         failure {
             script {
                 try {
-                    slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env
+                    slackSend(channel: "${SLACK_CHANNEL}", message: ":x: *FAILED* ${env.JOB_NAME} #${env.BUILD_NUMBER} — check console")
+                } catch (e) { echo "Slack not configured or plugin missing" }
+            }
+            emailext subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build failed. Check Jenkins console output.",
+                     to: "you@example.com"
+        }
+        always {
+            echo "Build finished: ${currentBuild.currentResult}"
+        }
+    }
+}
