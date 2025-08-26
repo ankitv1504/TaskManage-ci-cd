@@ -6,7 +6,7 @@ pipeline {
         booleanParam(name: 'RUN_SONAR',     defaultValue: true,  description: 'Run SonarQube analysis')
         booleanParam(name: 'RUN_TRIVY',     defaultValue: true,  description: 'Scan image with Trivy')
         booleanParam(name: 'DEPLOY_COMPOSE',defaultValue: true,  description: 'Deploy using docker compose (manifest repo)')
-        booleanParam(name: 'DEPLOY_K8S',    defaultValue: true, description: 'Deploy to Kubernetes using Helm chart')
+        booleanParam(name: 'DEPLOY_K8S',    defaultValue: true,  description: 'Deploy to Kubernetes using Helm chart')
         booleanParam(name: 'INSTALL_MON',   defaultValue: false, description: 'Install/Upgrade Prometheus & Grafana via Helm')
     }
 
@@ -37,7 +37,9 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
 
         stage('Compute Image Tag') {
@@ -54,6 +56,7 @@ pipeline {
             steps {
                 dir('todo-src') {
                     sh 'npm install'
+                    // yeh line build step optional banati hai
                     sh 'npm run build || echo "no build step"'
                 }
             }
@@ -62,6 +65,7 @@ pipeline {
         stage('Test') {
             steps {
                 dir('todo-src') {
+                    // yeh line test step optional banati hai
                     sh 'npm test || echo "no tests"'
                 }
             }
@@ -71,22 +75,21 @@ pipeline {
             when { expression { return params.RUN_SONAR } }
             steps {
                 dir('todo-src') {
-                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                        script {
-                            def scannerHome = tool "${SONAR_SCANNER}"
-                            sh """
-                                ${scannerHome}/bin/sonar-scanner \
-                                  -Dsonar.projectKey=${SONAR_PROJECTKEY} \
-                                  -Dsonar.projectName=${SONAR_PROJNAME} \
-                                  -Dsonar.projectVersion=${SONAR_PROJVER} \
-                                  -Dsonar.sources=./src,./views,./server.js,./app.js \
-                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                                  -Dsonar.exclusions=node_modules/**,public/**
-                            """
+                        withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                            script {
+                                def scannerHome = tool "${SONAR_SCANNER}"
+                                sh """
+                                    ${scannerHome}/bin/sonar-scanner \
+                                      -Dsonar.projectKey=${SONAR_PROJECTKEY} \
+                                      -Dsonar.projectName=${SONAR_PROJNAME} \
+                                      -Dsonar.projectVersion=${SONAR_PROJVER} \
+                                      -Dsonar.sources=./src,./views,./server.js,./app.js \
+                                      -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                                      -Dsonar.exclusions=node_modules/**,public/**
+                                """
+                            }
                         }
-                    }
-                  }
+                    
                 }
             }
         }
@@ -217,7 +220,7 @@ pipeline {
             }
             emailext subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                      body: "Build succeeded and deployed image ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}",
-                     to: "you@example.com"
+                     to: "ankitv1504@gmail.com"
         }
         failure {
             script {
@@ -227,7 +230,7 @@ pipeline {
             }
             emailext subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                      body: "Build failed. Check Jenkins console output.",
-                     to: "you@example.com"
+                     to: "ankitv1504@gmail.com"
         }
         always {
             echo "Build finished: ${currentBuild.currentResult}"
